@@ -7,8 +7,6 @@ const APP_URL = (process.env.APP_URL || 'https://stats-meta-test.vercel.app').re
 const SCOPES = [
   'pages_show_list',
   'pages_read_engagement',
-  'instagram_basic',
-  'ads_read',
   'business_management',
 ].join(',');
 
