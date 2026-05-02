@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 
 const META_APP_ID = process.env.META_APP_ID!;
 const META_APP_SECRET = process.env.META_APP_SECRET!;
-const APP_URL = process.env.APP_URL || 'https://stats-meta-test.vercel.app';
+const APP_URL = (process.env.APP_URL || 'https://stats-meta-test.vercel.app').replace(/\/$/, '');
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { code, state, error } = req.query as Record<string, string>;

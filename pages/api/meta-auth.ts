@@ -2,14 +2,12 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import crypto from 'crypto';
 
 const META_APP_ID = process.env.META_APP_ID!;
-const APP_URL = process.env.APP_URL || 'https://stats-meta-test.vercel.app';
+const APP_URL = (process.env.APP_URL || 'https://stats-meta-test.vercel.app').replace(/\/$/, '');
 
 const SCOPES = [
   'pages_show_list',
   'pages_read_engagement',
-  'pages_read_user_content',
   'instagram_basic',
-  'instagram_manage_insights',
   'ads_read',
   'business_management',
 ].join(',');
