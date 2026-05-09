@@ -42,10 +42,7 @@ export function useMeta(since: string, until: string) {
   const checkMeta = useCallback(async () => {
     try {
       const res = await fetch('/api/meta-data?type=me');
-      if (!res.ok) {
-        // Not necessarily an error if not connected yet
-        return;
-      }
+      if (!res.ok) return;
       const d = await res.json();
 
       if (d.id) {
@@ -61,9 +58,9 @@ export function useMeta(since: string, until: string) {
           setSelectedPage(pd.data[0] || null);
         }
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('Meta connection check failed:', e);
-      setError(e.message);
+      if (e instanceof Error) setError(e.message);
     }
   }, []);
 
@@ -77,6 +74,8 @@ export function useMeta(since: string, until: string) {
     setPosts([]);
     setError(null);
     try {
+      // For security, sensitive tokens should ideally be in headers or POST body.
+      // Keeping it consistent with current API for now but using URLSearchParams for safety.
       const params = new URLSearchParams({
         type: 'posts',
         page_id: selectedPage.id,
@@ -92,8 +91,8 @@ export function useMeta(since: string, until: string) {
       }
 
       setPosts(d.data || []);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      if (e instanceof Error) setError(e.message);
     } finally {
       setLoading(false);
     }
@@ -117,8 +116,8 @@ export function useMeta(since: string, until: string) {
       }
 
       setMetaCampaigns(d.campaigns || []);
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      if (e instanceof Error) setError(e.message);
     } finally {
       setLoading(false);
     }

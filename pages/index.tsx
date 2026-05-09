@@ -1,22 +1,33 @@
 import { useState, useEffect } from 'react';
+import { useMeta } from '@/hooks/useMeta';
 
-type Page = { id: string; name: string; access_token: string; instagram_business_account?: { id: string } };
-type MetaCampaign = { id: string; name: string; status: string; spend: number; impressions: number; clicks: number; ctr: string; cpc: string };
-type Post = { id: string; message?: string; story?: string; created_time: string; full_picture?: string; permalink_url?: string; likes?: { summary: { total_count: number } }; comments?: { summary: { total_count: number } } };
 type GA4Row = { dimensionValues: { value: string }[]; metricValues: { value: string }[] };
 type AdsCampaign = { campaign: { id: string; name: string; status: string }; metrics: { impressions: string; clicks: string; costMicros: string; conversions: string; conversionsValue: string } };
 
 export default function Home() {
   const [section, setSection] = useState<'meta' | 'google'>('meta');
 
-  // Meta
-  const [metaConnected, setMetaConnected] = useState(false);
-  const [metaUser, setMetaUser] = useState('');
-  const [pages, setPages] = useState<Page[]>([]);
-  const [selectedPage, setSelectedPage] = useState<Page | null>(null);
-  const [metaTab, setMetaTab] = useState<'posts' | 'ads'>('posts');
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [metaCampaigns, setMetaCampaigns] = useState<MetaCampaign[]>([]);
+  // Shared
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [since, setSince] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0]; });
+  const [until, setUntil] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // Meta (using hook)
+  const {
+    metaConnected,
+    metaUser,
+    pages,
+    selectedPage,
+    setSelectedPage,
+    posts,
+    metaCampaigns,
+    loading: metaLoading,
+    error: metaError,
+    setError: setMetaError,
+    loadPosts,
+    loadMetaAds
+  } = useMeta(since, until);
 
   // Google
   const [googleConnected, setGoogleConnected] = useState(false);
@@ -27,31 +38,14 @@ export default function Home() {
   const [adsCustomers, setAdsCustomers] = useState<string[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [adsCampaigns, setAdsCampaigns] = useState<AdsCampaign[]>([]);
-
-  // Shared
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [since, setSince] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0]; });
-  const [until, setUntil] = useState(() => new Date().toISOString().split('T')[0]);
+  const [metaTab, setMetaTab] = useState<'posts' | 'ads'>('posts');
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     if (p.get('error')) setError(decodeURIComponent(p.get('error')!));
     if (p.get('error_google')) setError(decodeURIComponent(p.get('error_google')!));
-    checkMeta();
     checkGoogle();
   }, []);
-
-  const checkMeta = async () => {
-    try {
-      const d = await fetch('/api/meta-data?type=me').then(r => r.json());
-      if (d.id) {
-        setMetaConnected(true); setMetaUser(d.name);
-        const pd = await fetch('/api/meta-data?type=pages').then(r => r.json());
-        if (pd.data) { setPages(pd.data); setSelectedPage(pd.data[0] || null); }
-      }
-    } catch {}
-  };
 
   const checkGoogle = async () => {
     try {
@@ -63,23 +57,6 @@ export default function Home() {
         if (props.length) setSelectedProperty(props[0].id);
       }
     } catch {}
-  };
-
-  const loadPosts = async () => {
-    if (!selectedPage) return;
-    setLoading(true); setPosts([]); setError('');
-    const d = await fetch(`/api/meta-data?type=posts&page_id=${selectedPage.id}&page_token=${selectedPage.access_token}&since=${since}&until=${until}`).then(r => r.json());
-    if (d.error) setError(typeof d.error === 'string' ? d.error : d.error.message || JSON.stringify(d.error));
-    setPosts(d.data || []);
-    setLoading(false);
-  };
-
-  const loadMetaAds = async () => {
-    setLoading(true); setMetaCampaigns([]); setError('');
-    const d = await fetch(`/api/meta-data?type=ads&since=${since}&until=${until}`).then(r => r.json());
-    if (d.error) setError(d.error);
-    setMetaCampaigns(d.campaigns || []);
-    setLoading(false);
   };
 
   const loadGA4 = async () => {
@@ -116,15 +93,17 @@ export default function Home() {
   const thStyle: React.CSSProperties = { padding: '8px 12px', textAlign: 'left', fontWeight: 600, color: '#636366', borderBottom: '1px solid #e5e5ea', whiteSpace: 'nowrap', fontSize: 12 };
   const tdStyle: React.CSSProperties = { padding: '8px 12px', borderBottom: '1px solid #f0f0f0', fontSize: 13 };
 
+  const displayedError = error || metaError;
+
   return (
     <div style={s}>
       <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>🧪 Stats You Need — Integration Test</h1>
       <p style={{ color: '#636366', fontSize: 13, marginBottom: 20 }}>Test environment · Not production</p>
 
-      {error && (
+      {displayedError && (
         <div style={{ background: '#fff0f0', border: '1px solid #fcc', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#c00', display: 'flex', justifyContent: 'space-between' }}>
-          <span>⚠️ {error}</span>
-          <button onClick={() => setError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c00', fontWeight: 700, fontSize: 16 }}>×</button>
+          <span>⚠️ {displayedError}</span>
+          <button onClick={() => { setError(''); setMetaError(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c00', fontWeight: 700, fontSize: 16 }}>×</button>
         </div>
       )}
 
@@ -176,15 +155,15 @@ export default function Home() {
               <input type="date" value={since} onChange={e => setSince(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }} />
               <span>→</span>
               <input type="date" value={until} onChange={e => setUntil(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }} />
-              <button onClick={metaTab === 'posts' ? loadPosts : loadMetaAds} disabled={loading}
+              <button onClick={metaTab === 'posts' ? loadPosts : loadMetaAds} disabled={metaLoading}
                 style={{ padding: '7px 20px', borderRadius: 6, background: '#1877F2', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-                {loading ? 'Loading...' : 'Load'}
+                {metaLoading ? 'Loading...' : 'Load'}
               </button>
             </div>
 
             {metaTab === 'posts' && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12 }}>
-                {posts.length === 0 && !loading && <p style={{ color: '#636366', fontSize: 13 }}>No posts. Click Load.</p>}
+                {posts.length === 0 && !metaLoading && <p style={{ color: '#636366', fontSize: 13 }}>No posts. Click Load.</p>}
                 {posts.map(p => (
                   <div key={p.id} style={cardStyle}>
                     {p.full_picture && <img src={p.full_picture} alt="" style={{ width: '100%', height: 140, objectFit: 'cover' }} />}
