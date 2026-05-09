@@ -9,8 +9,6 @@ const SCOPES = [
   'pages_read_engagement',
   'pages_read_user_content',
   'business_management',
-  'ads_read',
-  'read_insights',
 ].join(',');
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
