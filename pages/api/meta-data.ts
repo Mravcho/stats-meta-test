@@ -12,7 +12,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const r = await fetch(
         `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token,instagram_business_account,followers_count&access_token=${token}`
       );
-      return res.json(await r.json());
+      const data = await r.json();
+      if (data.error) {
+        console.error('Meta API Error (pages):', data.error);
+      }
+      return res.json(data);
     }
 
     if (type === 'posts') {
@@ -23,7 +27,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         `fields=id,message,story,created_time,full_picture,permalink_url,likes.summary(true),comments.summary(true),shares` +
         `&limit=20${timeFilter}&access_token=${page_token}`
       );
-      return res.json(await r.json());
+      const data = await r.json();
+      if (data.error) {
+        console.error('Meta API Error (posts):', data.error);
+      }
+      return res.json(data);
     }
 
     if (type === 'ig_posts') {

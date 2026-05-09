@@ -7,6 +7,7 @@ const APP_URL = (process.env.APP_URL || 'https://stats-meta-test.vercel.app').re
 const SCOPES = [
   'pages_show_list',
   'pages_read_engagement',
+  'pages_read_user_content',
   'business_management',
 ].join(',');
 
@@ -20,6 +21,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     scope: SCOPES,
     response_type: 'code',
     state,
+    auth_type: 'rerequest', // Force re-requesting missing permissions
+    display: 'popup',
   });
   res.redirect(`https://www.facebook.com/v19.0/dialog/oauth?${params}`);
 }
