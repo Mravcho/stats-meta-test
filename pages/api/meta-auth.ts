@@ -8,8 +8,6 @@ const SCOPES = [
   'pages_show_list',
   'pages_read_engagement',
   'business_management',
-  'ads_read',
-  'read_insights',
 ].join(',');
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -22,6 +20,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     scope: SCOPES,
     response_type: 'code',
     state,
+    auth_type: 'rerequest', // Force re-requesting missing permissions
+    display: 'popup',
   });
   res.redirect(`https://www.facebook.com/v19.0/dialog/oauth?${params}`);
 }
